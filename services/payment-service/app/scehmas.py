@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.models import PaymentStatus
 
 
+
 class PaymentCreate(BaseModel):
     merchant_id: str = Field(min_length=1, max_length=64)
     amount: int = Field(gt=0, description="Amount in paise (₹1 = 100)")

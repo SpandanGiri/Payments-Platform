@@ -1,11 +1,11 @@
-from fastapi import FastAPI,Depends
+from fastapi import FastAPI,Depends,HTTPException
 from pydantic import BaseModel,Field
 from app.database import get_db,engine,Base
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from app.scehmas import PaymentCreate,PaymentOut
 from app.models import Payment
-
+from uuid import UUID
 
 Base.metadata.create_all(bind=engine)
 
@@ -40,6 +40,10 @@ def createPayment(body:PaymentCreate,db:Session = Depends(get_db)):
 
 
 @app.get("/payments/{payment_id}")
-def getPayment(payment_id:str):
-    pass
+def getPayment(payment_id:UUID,db:Session = Depends(get_db)):
+    payment = db.get(Payment, payment_id)
+    if payment is None:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    return payment
+    
 

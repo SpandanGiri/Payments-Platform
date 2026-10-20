@@ -15,7 +15,7 @@ class PaymentStatus(str, enum.Enum):
     CAPTURED = "CAPTURED"
     FAILED = "FAILED"
 
-
+  
 class Payment(Base):
     __tablename__ = "payments"
 
@@ -30,3 +30,5 @@ class Payment(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+    
