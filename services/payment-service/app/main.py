@@ -1,10 +1,15 @@
 from fastapi import FastAPI,Depends
 from pydantic import BaseModel,Field
-from app.database import get_db
+from app.database import get_db,engine,Base
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+from app.scehmas import PaymentCreate,PaymentOut
+from app.models import Payment
 
-app = FastAPI()
+
+Base.metadata.create_all(bind=engine)
+
+app=FastAPI(title="payment-service")
 
 class PaymentCreate(BaseModel):
     merchant_id: str = Field(min_length=1, max_length=64)
@@ -25,8 +30,14 @@ def testDb(db:Session = Depends(get_db)):
 
 
 @app.post("/payments")
-def createPayment():
-    pass
+def createPayment(body:PaymentCreate,db:Session = Depends(get_db)):
+    payment = Payment(**body.model_dump())
+    db.add(payment)
+    db.commit()
+    db.refresh(payment)
+
+    return payment
+
 
 @app.get("/payments/{payment_id}")
 def getPayment(payment_id:str):
