@@ -36,3 +36,9 @@ class EntryOut(BaseModel):
     amount: int
     currency: str
     created_at: datetime
+
+class BalanceOut(BaseModel):
+    account: str
+    total_debits: int
+    total_credits: int
+    net: int  # debits minus credits

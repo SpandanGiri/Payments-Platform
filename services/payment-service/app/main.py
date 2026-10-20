@@ -1,3 +1,6 @@
+from uuid import UUID
+import httpx
+
 from fastapi import FastAPI,Depends,HTTPException
 from pydantic import BaseModel,Field
 from app.database import get_db,engine,Base
@@ -5,7 +8,11 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 from app.scehmas import PaymentCreate,PaymentOut
 from app.models import Payment
-from uuid import UUID
+from app.config import settings
+from app import ledger_client
+from app.models import Payment, PaymentStatus
+
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -17,7 +24,6 @@ class PaymentCreate(BaseModel):
     currency: str = Field(default="INR", pattern="^[A-Z]{3}$")
 
 
-
 @app.get("/health")
 def test():
     return {'msg':'payment-service is running'}
@@ -27,6 +33,10 @@ def testDb(db:Session = Depends(get_db)):
     db.execute(text("SELECT 1"))
     return {"db": "ok"}
 
+@app.get("/debug/ledger")
+def debug_ledger():
+    response = httpx.get(f"{settings.ledger_url}/health", timeout=3.0)
+    return {"ledger_status_code": response.status_code, "ledger_said": response.json()}
 
 
 @app.post("/payments")

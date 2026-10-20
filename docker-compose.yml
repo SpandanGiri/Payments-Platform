@@ -9,6 +9,7 @@ services:
     ports: ["8001:8000"]
     environment:
       DATABASE_URL: postgresql+psycopg://app:app@payment-db:5432/payments
+      LEDGER_URL: http://ledger-service:8000
     volumes:
       - ./services/payment-service:/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
@@ -19,7 +20,14 @@ services:
   ledger-service:
     build: ./services/ledger-service
     ports: ["8002:8000"]
-    depends_on: [ledger-db]
+    environment:
+      DATABASE_URL: postgresql+psycopg://app:app@ledger-db:5432/ledger
+    volumes:
+      - ./services/ledger-service:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      ledger-db:
+        condition: service_healthy
 
   payment-db:
     image: postgres:16
@@ -41,6 +49,11 @@ services:
       POSTGRES_PASSWORD: app
       POSTGRES_DB: ledger
     volumes: [ledger-db-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d ledger"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
 
   redis:
     image: redis:7
