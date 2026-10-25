@@ -13,6 +13,7 @@ class EntryIn(BaseModel):
 
 class TransactionCreate(BaseModel):
     payment_id: UUID
+    idempotency_key: str = Field(min_length=1, max_length=128)
     currency: str = Field(default="INR", pattern="^[A-Z]{3}$")
     entries: list[EntryIn] = Field(min_length=2)
 

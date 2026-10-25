@@ -1,5 +1,6 @@
 from uuid import UUID
 import httpx
+import logging
 
 from fastapi import FastAPI,Depends,HTTPException
 from pydantic import BaseModel,Field
@@ -14,7 +15,9 @@ from app.models import Payment, PaymentStatus
 
 
 
+
 Base.metadata.create_all(bind=engine)
+logger = logging.getLogger("payment-service")
 
 app=FastAPI(title="payment-service")
 
@@ -57,3 +60,28 @@ def getPayment(payment_id:UUID,db:Session = Depends(get_db)):
     return payment
     
 
+@app.post("/payments/{payment_id}/capture", response_model=PaymentOut)
+def capture_payment(payment_id: UUID, db: Session = Depends(get_db)):
+    payment = db.get(Payment, payment_id)
+    if payment is None:
+        raise HTTPException(status_code=404, detail="Payment not found")
+
+    if payment.status != PaymentStatus.CREATED:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Cannot capture a payment in status {payment.status.value}",
+        )
+
+    try:
+        ledger_client.record_capture(payment.id, payment.merchant_id, payment.amount, payment.currency)
+    except httpx.HTTPError as exc:
+        logger.error("ledger call failed for payment %s: %s", payment.id, exc)
+        raise HTTPException(
+            status_code=503,
+            detail="Ledger service unavailable. The payment was not captured, please retry.",
+        )
+
+    payment.status = PaymentStatus.CAPTURED
+    db.commit()
+    db.refresh(payment)
+    return payment
