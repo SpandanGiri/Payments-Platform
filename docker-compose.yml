@@ -2,7 +2,13 @@ services:
   api-gateway:
     build: ./services/api-gateway
     ports: ["8000:8000"]
-    depends_on: [redis]
+    environment:
+      PAYMENT_URL: http://payment-service:8000
+    volumes:
+      - ./services/api-gateway:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      - payment-service
 
   payment-service:
     build: ./services/payment-service
